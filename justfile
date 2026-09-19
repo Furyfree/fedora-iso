@@ -14,10 +14,36 @@ fetch:
     trap 'rm -rf "$tmp"' EXIT
     curl -fsSL -o "$tmp/CHECKSUM" "{{iso_base}}/{{checksum}}"
     grep '^SHA256 (' "$tmp/CHECKSUM" | sed -E 's/^SHA256 \((.*)\) = ([0-9a-f]+)$/\2  \1/' > "$tmp/iso.sha256"
+
     if [ -f "{{image}}" ] && sha256sum -c "$tmp/iso.sha256" >/dev/null 2>&1; then
         echo "{{image}} is present and verified"
         exit 0
     fi
+
+    if [ -f "{{image}}" ]; then
+        remote="$(curl -fsIL "{{iso_base}}/{{image}}" | awk 'tolower($1) == "content-length:" {n = $2} END {gsub(/\r/, "", n); print n}')"
+        local_size="$(stat -c %s "{{image}}")"
+        if [ -n "$remote" ] && [ "$local_size" -lt "$remote" ]; then
+            echo "Resuming {{image}}: $local_size of $remote bytes"
+        else
+            echo "{{image}} exists but does not match Fedora's checksum."
+            read -r -p "Delete it and download fresh? [y/N] " answer
+            case "$answer" in
+                [yY]) rm -f "{{image}}" ;;
+                *) echo "Kept the existing file; nothing downloaded." >&2; exit 1 ;;
+            esac
+        fi
+    fi
+
+    older=(Fedora-Everything-netinst-x86_64-{{release}}-*.iso)
+    if [ -e "${older[0]}" ]; then
+        echo "Other Fedora {{release}} media present: ${older[*]}"
+        read -r -p "Remove those? [y/N] " answer
+        case "$answer" in
+            [yY]) rm -f "${older[@]}" ;;
+        esac
+    fi
+
     curl -fL -C - -O "{{iso_base}}/{{image}}"
     sha256sum -c "$tmp/iso.sha256"
 

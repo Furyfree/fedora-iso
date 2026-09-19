@@ -50,7 +50,11 @@ The AUR carries `lorax` and `python-pykickstart`. They are unofficial and
 untested here; install them with your AUR helper and continue below.
 
 `just fetch` downloads and verifies the official netinstall ISO for the
-release configured at the top of the justfile; `just iso` runs it first.
+release configured at the top of the justfile; `just iso` runs it first. An
+existing ISO is skipped once it verifies against Fedora's checksum; a partial
+download resumes, a complete file that no longer matches asks before it is
+deleted and re-downloaded, and other downloaded point releases are offered
+for removal.
 
 ```sh
 just fetch
