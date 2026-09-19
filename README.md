@@ -1,9 +1,10 @@
 # fedora-iso
 
 Fedora workstation install media built from a kickstart. The kickstart
-prefills the installer choices that are the same on every machine; disk,
-LUKS passphrase, root, user and network stay interactive, and every prefilled
-spoke can still be edited before install.
+prefills the installer choices that are the same on every machine. The target
+disk is chosen on the installer console before the GUI starts, then pinned
+for the rest of the install; the LUKS passphrase, root, user and network stay
+interactive.
 
 This is not a custom distribution image. `mkksiso` injects the kickstart into
 the official Fedora Everything/netinstall ISO and leaves the signed boot
@@ -23,9 +24,21 @@ The btrfs subvolumes are root, home, snapshots, log, cache, swapfile,
 flatpak, windows, docker and containerd.
 
 Not prefilled on purpose: the installation source (choose Closest mirror),
-the target disk, the LUKS passphrase, root, the user account, network and
-hostname. The kickstart never pins a disk, so the prefilled layout applies
-to the disk you select.
+the LUKS passphrase, root, the user account, network and hostname.
+
+## Choosing the disk
+
+Before the graphical installer starts, the kickstart lists the local disks
+with their model, size and existing filesystems, asks which one to install
+to, and requires a `YES` confirmation because that disk is erased. With a
+single disk it selects it automatically and only asks for the confirmation.
+
+Boot with `inst.disk=/dev/disk/by-id/...` to skip the menu; the confirmation
+still runs. That is also the fallback if the console prompt ever fails.
+
+Do not open Installation Destination: pressing Done there replaces the
+kickstart layout with automatic partitioning. Complete the startup LUKS
+passphrase dialog; cancelling it discards the layout too.
 
 ## Build
 

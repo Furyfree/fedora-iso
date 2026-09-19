@@ -1,6 +1,6 @@
 fedora := "44"
 point := "1.7"
-revision := "1"
+revision := "2"
 out := "out"
 tag := "v" + fedora + "." + revision
 image := "Fedora-Everything-netinst-x86_64-" + fedora + "-" + point + ".iso"
