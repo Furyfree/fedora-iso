@@ -40,7 +40,8 @@ done
 
 [ -c /dev/tty3 ] || { echo "nimbus: /dev/tty3 unavailable" >&2; exit 1; }
 chvt 3 2>/dev/null
-/bin/sh "$prompt" </dev/tty3 >/dev/tty3 2>&1
+# --ctty makes tty3 the controlling terminal, so input reaches the prompt.
+setsid -c -w /bin/sh "$prompt" </dev/tty3 >/dev/tty3 2>&1
 chvt 1 2>/dev/null || true
 %end
 
