@@ -49,10 +49,11 @@ packages as Fedora.
 The AUR carries `lorax` and `python-pykickstart`. They are unofficial and
 untested here; install them with your AUR helper and continue below.
 
-With the official `Fedora-Everything-netinst-x86_64-44-*.iso` in the repo
-root:
+`just fetch` downloads and verifies the official netinstall ISO for the
+release configured at the top of the justfile; `just iso` runs it first.
 
 ```sh
+just fetch
 just check
 just iso
 ```
