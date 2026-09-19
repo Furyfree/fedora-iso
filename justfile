@@ -59,6 +59,23 @@ iso: fetch
 
 # Build and publish the current ISO as a GitHub release. Requires gh auth.
 release:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "{{justfile_directory()}}"
+    if [ -n "$(git status --porcelain)" ]; then
+        echo "Worktree is not clean; commit or discard changes before releasing." >&2
+        git status --short >&2
+        exit 1
+    fi
+    git fetch --quiet origin main
+    if [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]; then
+        echo "HEAD is not origin/main; push or pull the release commit first." >&2
+        exit 1
+    fi
+    if gh release view "{{tag}}" >/dev/null 2>&1; then
+        echo "Release {{tag}} already exists; bump point for a new release." >&2
+        exit 1
+    fi
     just iso
-    cd {{out}} && sha256sum fedora-{{fedora}}-nimbus.iso > SHA256SUMS
-    gh release create {{tag}} {{out}}/fedora-{{fedora}}-nimbus.iso {{out}}/SHA256SUMS --title "Fedora {{fedora}} install media {{tag}}" --notes "Modified Fedora {{fedora}} Everything/netinstall ISO with the workstation kickstart. Not Fedora-signed; verify SHA256SUMS before writing."
+    (cd {{out}} && sha256sum fedora-{{fedora}}-nimbus.iso > SHA256SUMS)
+    gh release create {{tag}} "{{out}}/fedora-{{fedora}}-nimbus.iso" "{{out}}/SHA256SUMS" --title "Fedora {{fedora}} install media {{tag}}" --notes "Modified Fedora {{fedora}} Everything/netinstall ISO with the workstation kickstart. Not Fedora-signed; verify SHA256SUMS before writing."
