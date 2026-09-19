@@ -28,8 +28,8 @@ the LUKS passphrase, root, the user account, network and hostname.
 
 ## Choosing the disk
 
-Before the graphical installer starts, the kickstart switches to tty3, lists
-the local disks with their model, size and existing
+Before the graphical installer starts, the kickstart asks on the installer
+console and lists the local disks with their model, size and existing
 filesystems, asks which one to install to, and requires a `YES` confirmation
 because that disk is erased. With a single disk it only asks for the
 confirmation. `inst.disk=/dev/disk/by-id/...` at the boot prompt skips the
