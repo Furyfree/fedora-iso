@@ -61,6 +61,7 @@ iso: fetch
     cp scripts/disk-prompt.sh {{out}}/iso/nimbus/
     rm -f {{out}}/fedora-{{fedora}}-nimbus.iso
     sudo mkksiso --ks fedora-{{fedora}}.ks --add {{out}}/iso/nimbus {{image}} {{out}}/fedora-{{fedora}}-nimbus.iso
+    (cd {{out}} && sha256sum fedora-{{fedora}}-nimbus.iso > SHA256SUMS)
 
 # Build and publish the current ISO as a GitHub release. Requires gh auth.
 release:
@@ -82,5 +83,4 @@ release:
         exit 1
     fi
     just iso
-    (cd {{out}} && sha256sum fedora-{{fedora}}-nimbus.iso > SHA256SUMS)
     gh release create {{tag}} "{{out}}/fedora-{{fedora}}-nimbus.iso" "{{out}}/SHA256SUMS" --title "Fedora {{fedora}} install media {{tag}}" --notes "Source: {{image}}. Modified Fedora {{fedora}} Everything/netinstall ISO with the workstation kickstart. Not Fedora-signed; verify SHA256SUMS before use."
