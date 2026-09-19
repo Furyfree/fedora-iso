@@ -57,7 +57,7 @@ iso: fetch
     mkdir -p {{out}}
     sudo mkksiso --ks fedora-{{fedora}}.ks {{image}} {{out}}/fedora-{{fedora}}-nimbus.iso
 
-# Build and publish the current ISO as the {{tag}} GitHub release. Requires gh auth.
+# Build and publish the current ISO as a GitHub release. Requires gh auth.
 release:
     just iso
     cd {{out}} && sha256sum fedora-{{fedora}}-nimbus.iso > SHA256SUMS
