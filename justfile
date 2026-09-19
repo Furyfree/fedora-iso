@@ -1,7 +1,8 @@
 fedora := "44"
 point := "1.7"
+revision := "1"
 out := "out"
-tag := "v" + fedora + "." + point
+tag := "v" + fedora + "." + revision
 image := "Fedora-Everything-netinst-x86_64-" + fedora + "-" + point + ".iso"
 checksum := "Fedora-Everything-" + fedora + "-" + point + "-x86_64-CHECKSUM"
 iso_base := "https://download.fedoraproject.org/pub/fedora/linux/releases/" + fedora + "/Everything/x86_64/iso"
@@ -73,9 +74,9 @@ release:
         exit 1
     fi
     if gh release view "{{tag}}" >/dev/null 2>&1; then
-        echo "Release {{tag}} already exists; bump point for a new release." >&2
+        echo "Release {{tag}} already exists; bump revision." >&2
         exit 1
     fi
     just iso
     (cd {{out}} && sha256sum fedora-{{fedora}}-nimbus.iso > SHA256SUMS)
-    gh release create {{tag}} "{{out}}/fedora-{{fedora}}-nimbus.iso" "{{out}}/SHA256SUMS" --title "Fedora {{fedora}} install media {{tag}}" --notes "Modified Fedora {{fedora}} Everything/netinstall ISO with the workstation kickstart. Not Fedora-signed; verify SHA256SUMS before writing."
+    gh release create {{tag}} "{{out}}/fedora-{{fedora}}-nimbus.iso" "{{out}}/SHA256SUMS" --title "Fedora {{fedora}} install media {{tag}}" --notes "Source: {{image}}. Modified Fedora {{fedora}} Everything/netinstall ISO with the workstation kickstart. Not Fedora-signed; verify SHA256SUMS before use."

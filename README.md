@@ -89,11 +89,19 @@ disk, reclaim its space in the storage spoke rather than automating a wipe.
 
 ## Releases
 
-`just release` builds the ISO and publishes it as a GitHub release with a
-`SHA256SUMS` file. The tag comes from the justfile as `v<fedora>.<point>`,
-currently `v44.1.7`, so bumping `point` after a Fedora respin or adding
-`fedora-<release>.ks` for a new Fedora changes it automatically. It needs an
-authenticated `gh`. The ISO is not Fedora-signed.
+`just release` builds the ISO and publishes it as the GitHub release
+`v<fedora>.<revision>`, currently `v44.1`, with a `SHA256SUMS` file. It needs
+an authenticated `gh`. The ISO is not Fedora-signed.
+
+Three values at the top of the justfile control this:
+
+- `fedora` and `point` select the official netinstall media (`44-1.7`).
+- `revision` is this repository's release number for that media.
+
+Bump `revision` for any kickstart or tooling change. Update `point` when
+Fedora respins the media, and bump `revision` with it. A new Fedora release
+needs `fedora-<release>.ks` (with a matching mirrorlist URL), then `fedora`,
+`point` and `revision` set to that media.
 
 ## After install
 
