@@ -56,6 +56,7 @@ check:
 # Build the install ISO from the official netinstall image in the repo root.
 iso: fetch
     mkdir -p {{out}}
+    rm -f {{out}}/fedora-{{fedora}}-nimbus.iso
     sudo mkksiso --ks fedora-{{fedora}}.ks {{image}} {{out}}/fedora-{{fedora}}-nimbus.iso
 
 # Build and publish the current ISO as a GitHub release. Requires gh auth.
