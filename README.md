@@ -29,25 +29,37 @@ prefilled layout applies to the disk you select.
 
 ## Build
 
-`pykickstart` (ksvalidator) and `lorax` (mkksiso) are selected by the Nimbus
-development profile, or install them directly.
-
 ### Fedora
 
 ```sh
-sudo dnf install -y pykickstart lorax
+sudo dnf install -y just pykickstart lorax
 ```
 
 ### Windows
 
 Build inside the Fedora WSL that
 [win-setup](https://github.com/Furyfree/win-setup) provisions, with the same
-packages as Fedora.
+packages as Fedora (`just`, `pykickstart`, `lorax`).
 
 ### Arch Linux
 
-The AUR carries `lorax` and `python-pykickstart`. They are unofficial and
-untested here; install them with your AUR helper and continue below.
+`just` is in the official repositories; the AUR carries `lorax` and
+`python-pykickstart`. The AUR packages are unofficial and untested here.
+
+```sh
+sudo pacman -S just
+# install lorax and python-pykickstart from the AUR
+```
+
+### Build the media
+
+From the repository checkout, on any of the platforms above:
+
+```sh
+just fetch
+just check
+just iso
+```
 
 `just fetch` downloads and verifies the official netinstall ISO for the
 release configured at the top of the justfile; `just iso` runs it first. An
@@ -56,14 +68,8 @@ download resumes, a complete file that no longer matches asks before it is
 deleted and re-downloaded, and other downloaded point releases are offered
 for removal.
 
-```sh
-just fetch
-just check
-just iso
-```
-
 The result is `out/fedora-44-nimbus.iso`. Write it to a USB stick with Fedora
-Media Writer or:
+Media Writer or (replace `/dev/sdX` with the USB device):
 
 ```sh
 sudo dd if=out/fedora-44-nimbus.iso of=/dev/sdX bs=8M status=progress conv=fsync
@@ -71,9 +77,10 @@ sudo dd if=out/fedora-44-nimbus.iso of=/dev/sdX bs=8M status=progress conv=fsync
 
 ### Alternative: OEMDRV stick
 
-No ISO rebuild needed. Put the kickstart on a small FAT volume labeled
-`OEMDRV`; Anaconda loads `/ks.cfg` automatically when the stock netinstall
-media boots:
+Write the verified netinstall ISO from `just fetch` (or any official
+netinstall media) to a USB as usual, then put the kickstart on a small FAT
+volume labeled `OEMDRV`. Anaconda loads `/ks.cfg` automatically when the
+stock media boots, so no rebuilt ISO is needed:
 
 ```sh
 sudo parted /dev/sdX --script mklabel msdos mkpart primary fat32 1MiB 100%
@@ -112,9 +119,11 @@ disk, reclaim its space in the storage spoke rather than automating a wipe.
 ## Releases
 
 `just release v44.1` builds the ISO and publishes it as a GitHub release with
-a `SHA256SUMS` file. The ISO is not Fedora-signed; verify the checksum before
-writing it. Rebuild the media when a new official netinstall ISO is used, and
-add `fedora-<release>.ks` for a new Fedora release.
+a `SHA256SUMS` file. It needs an authenticated `gh`. The `release` and
+`point` values at the top of the justfile select the source media; bump
+`point` after a Fedora respin. The ISO is not Fedora-signed; verify the
+checksum before writing it. Add `fedora-<release>.ks` for a new Fedora
+release.
 
 ## After install
 
@@ -123,3 +132,7 @@ add `fedora-<release>.ks` for a new Fedora release.
 - `docker`, `containerd` and `/var/lib/nimbus` may need `restorecon`, and VM
   images want `chattr +C`.
 - Guest Agents is not selected; tick it for a VM install.
+
+## License
+
+MIT, see [LICENSE](LICENSE).
