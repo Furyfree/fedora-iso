@@ -15,4 +15,6 @@ Personal Fedora workstation install media built from a kickstart.
 - The disk prompt is `scripts/disk-prompt.sh`, shipped on the ISO with
   `mkksiso --add` and covered by `tests/disk-prompt.test.sh`; keep
   `just check` green.
+- Release numbers come from git tags (`v<fedora>.<n>`); cut releases
+  with `just release`, never by editing a version.
 - Never commit secrets, credentials, private paths or built media.

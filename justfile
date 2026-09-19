@@ -1,8 +1,6 @@
 fedora := "44"
 point := "1.7"
-revision := "3"
 out := "out"
-tag := "v" + fedora + "." + revision
 image := "Fedora-Everything-netinst-x86_64-" + fedora + "-" + point + ".iso"
 checksum := "Fedora-Everything-" + fedora + "-" + point + "-x86_64-CHECKSUM"
 iso_base := "https://download.fedoraproject.org/pub/fedora/linux/releases/" + fedora + "/Everything/x86_64/iso"
@@ -16,12 +14,10 @@ fetch:
     trap 'rm -rf "$tmp"' EXIT
     curl -fsSL -o "$tmp/CHECKSUM" "{{iso_base}}/{{checksum}}"
     grep '^SHA256 (' "$tmp/CHECKSUM" | sed -E 's/^SHA256 \((.*)\) = ([0-9a-f]+)$/\2  \1/' > "$tmp/iso.sha256"
-
     if [ -f "{{image}}" ] && sha256sum -c "$tmp/iso.sha256" >/dev/null 2>&1; then
         echo "{{image}} is present and verified"
         exit 0
     fi
-
     if [ -f "{{image}}" ]; then
         remote="$(curl -fsIL "{{iso_base}}/{{image}}" | awk 'tolower($1) == "content-length:" {n = $2} END {gsub(/\r/, "", n); print n}')"
         local_size="$(stat -c %s "{{image}}")"
@@ -36,7 +32,6 @@ fetch:
             esac
         fi
     fi
-
     older=(Fedora-Everything-netinst-x86_64-{{fedora}}-*.iso)
     if [ -e "${older[0]}" ]; then
         echo "Other Fedora {{fedora}} media present: ${older[*]}"
@@ -45,7 +40,6 @@ fetch:
             [yY]) rm -f "${older[@]}" ;;
         esac
     fi
-
     curl -fL -C - -O "{{iso_base}}/{{image}}"
     sha256sum -c "$tmp/iso.sha256"
 
@@ -63,7 +57,7 @@ iso: fetch
     sudo mkksiso --ks fedora-{{fedora}}.ks --add {{out}}/iso/nimbus {{image}} {{out}}/fedora-{{fedora}}-nimbus.iso
     (cd {{out}} && sha256sum fedora-{{fedora}}-nimbus.iso > SHA256SUMS)
 
-# Build and publish the current ISO as a GitHub release. Requires gh auth.
+# Build and publish the current ISO as the next v<fedora>.<n> release.
 release:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -78,9 +72,23 @@ release:
         echo "HEAD is not origin/main; push or pull the release commit first." >&2
         exit 1
     fi
-    if gh release view "{{tag}}" >/dev/null 2>&1; then
-        echo "Release {{tag}} already exists; bump revision." >&2
-        exit 1
+    git fetch --quiet --tags origin
+    last="$(git tag -l --sort=-v:refname 'v{{fedora}}.*' | head -1)"
+    if [ -n "$last" ]; then
+        n="${last##*.}"
+        case "$n" in
+            ''|*[!0-9]*) echo "Unexpected release tag: $last" >&2; exit 1 ;;
+        esac
+    else
+        n=0
     fi
+    tag="v{{fedora}}.$((n + 1))"
     just iso
-    gh release create {{tag}} "{{out}}/fedora-{{fedora}}-nimbus.iso" "{{out}}/SHA256SUMS" --title "Fedora {{fedora}} install media {{tag}}" --notes "Source: {{image}}. Modified Fedora {{fedora}} Everything/netinstall ISO with the workstation kickstart. Not Fedora-signed; verify SHA256SUMS before use."
+    notes="Source: {{image}}
+    Commit: $(git rev-parse HEAD)
+    SHA256: $(cut -d' ' -f1 {{out}}/SHA256SUMS)
+    Modified Fedora {{fedora}} Everything/netinstall ISO with the workstation kickstart. Not Fedora-signed; verify SHA256SUMS before use."
+    git tag -a "$tag" -m "$notes"
+    git push origin "$tag"
+    gh release create "$tag" --verify-tag "{{out}}/fedora-{{fedora}}-nimbus.iso" "{{out}}/SHA256SUMS" \
+        --title "Fedora {{fedora}} install media $tag" --notes "$notes"

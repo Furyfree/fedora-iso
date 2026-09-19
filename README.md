@@ -107,19 +107,22 @@ disk, reclaim its space in the storage spoke rather than automating a wipe.
 
 ## Releases
 
-`just release` builds the ISO and publishes it as the GitHub release
-`v<fedora>.<revision>`, currently `v44.1`, with a `SHA256SUMS` file. It needs
-an authenticated `gh`. The ISO is not Fedora-signed.
+`just release` builds the ISO and publishes it as the next GitHub release,
+numbered from the existing tags: `v<fedora>.<n>`, so `v44.4` after `v44.3`.
+It needs an authenticated `gh`, runs only from a clean `main` in sync with
+`origin/main`, and creates an annotated tag whose message records the source
+image, the commit and the SHA-256; the release notes carry the same.
 
-Three values at the top of the justfile control this:
+Nothing is edited for a normal release. Two justfile values pin the source
+media, like a lockfile:
 
-- `fedora` and `point` select the official netinstall media (`44-1.7`).
-- `revision` is this repository's release number for that media.
+- `point` follows the official netinstall respin (currently `44-1.7`).
+- `fedora` changes with a new Fedora, alongside its `fedora-<release>.ks`.
 
-Bump `revision` for any kickstart or tooling change. Update `point` when
-Fedora respins the media, and bump `revision` with it. A new Fedora release
-needs `fedora-<release>.ks` (with a matching mirrorlist URL), then `fedora`,
-`point` and `revision` set to that media.
+The tag counter restarts per Fedora because tags are matched as `v<fedora>.*`.
+If the upload fails after the tag is pushed, rerun
+`gh release create <tag> --verify-tag out/fedora-44-nimbus.iso out/SHA256SUMS
+--notes "..."`, or release again and accept a skipped number.
 
 ## After install
 
