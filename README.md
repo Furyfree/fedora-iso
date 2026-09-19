@@ -16,16 +16,16 @@ binaries untouched.
 | Language | English (Denmark) |
 | Keyboard | Danish, then English (US) |
 | Time | Europe/Copenhagen, network time |
-| Source | Fedora mirrorlist (netinstall) |
 | Storage | EFI 1 GiB, ext4 `/boot` 2 GiB, LUKS2 btrfs, ten subvolumes |
 | Software | Custom Operating System, Standard, NetworkManager submodules |
 
 The btrfs subvolumes are root, home, snapshots, log, cache, swapfile,
 flatpak, windows, docker and containerd.
 
-Not prefilled on purpose: the target disk, the LUKS passphrase, root, the
-user account, network and hostname. The kickstart never pins a disk, so the
-prefilled layout applies to the disk you select.
+Not prefilled on purpose: the installation source (choose Closest mirror),
+the target disk, the LUKS passphrase, root, the user account, network and
+hostname. The kickstart never pins a disk, so the prefilled layout applies
+to the disk you select.
 
 ## Build
 

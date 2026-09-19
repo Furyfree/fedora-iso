@@ -12,7 +12,8 @@
 lang en_DK.UTF-8
 keyboard --vckeymap=dk --xlayouts='dk','us'
 timezone Europe/Copenhagen --utc
-url --mirrorlist="https://mirrors.fedoraproject.org/metalink?repo=fedora-44&arch=x86_64"
+
+# Installation Source is left to the installer: choose Closest mirror.
 
 part /boot/efi --fstype=efi --size=1024
 part /boot --fstype=ext4 --size=2048
