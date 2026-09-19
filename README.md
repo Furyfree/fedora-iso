@@ -59,7 +59,7 @@ From the repository checkout, on any of the platforms above:
 just fetch          # download and verify the official netinstall ISO
 just check          # validate the kickstart
 just iso            # build out/fedora-44-nimbus.iso
-just release v44.1  # the same build, published as a GitHub release
+just release        # the same build, published as a GitHub release
 ```
 
 `just fetch` downloads and verifies the official netinstall ISO for the
@@ -89,12 +89,11 @@ disk, reclaim its space in the storage spoke rather than automating a wipe.
 
 ## Releases
 
-`just release v44.1` builds the ISO and publishes it as a GitHub release with
-a `SHA256SUMS` file. It needs an authenticated `gh`. The `release` and
-`point` values at the top of the justfile select the source media; bump
-`point` after a Fedora respin. The ISO is not Fedora-signed; verify the
-checksum before writing it. Add `fedora-<release>.ks` for a new Fedora
-release.
+`just release` builds the ISO and publishes it as a GitHub release with a
+`SHA256SUMS` file. The tag comes from the justfile as `v<fedora>.<point>`,
+currently `v44.1.7`, so bumping `point` after a Fedora respin or adding
+`fedora-<release>.ks` for a new Fedora changes it automatically. It needs an
+authenticated `gh`. The ISO is not Fedora-signed.
 
 ## After install
 

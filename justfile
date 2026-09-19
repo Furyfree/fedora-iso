@@ -1,9 +1,10 @@
-release := "44"
+fedora := "44"
 point := "1.7"
 out := "out"
-image := "Fedora-Everything-netinst-x86_64-" + release + "-" + point + ".iso"
-checksum := "Fedora-Everything-" + release + "-" + point + "-x86_64-CHECKSUM"
-iso_base := "https://download.fedoraproject.org/pub/fedora/linux/releases/" + release + "/Everything/x86_64/iso"
+tag := "v" + fedora + "." + point
+image := "Fedora-Everything-netinst-x86_64-" + fedora + "-" + point + ".iso"
+checksum := "Fedora-Everything-" + fedora + "-" + point + "-x86_64-CHECKSUM"
+iso_base := "https://download.fedoraproject.org/pub/fedora/linux/releases/" + fedora + "/Everything/x86_64/iso"
 
 # Download and verify the official netinstall ISO for the configured release.
 fetch:
@@ -35,9 +36,9 @@ fetch:
         fi
     fi
 
-    older=(Fedora-Everything-netinst-x86_64-{{release}}-*.iso)
+    older=(Fedora-Everything-netinst-x86_64-{{fedora}}-*.iso)
     if [ -e "${older[0]}" ]; then
-        echo "Other Fedora {{release}} media present: ${older[*]}"
+        echo "Other Fedora {{fedora}} media present: ${older[*]}"
         read -r -p "Remove those? [y/N] " answer
         case "$answer" in
             [yY]) rm -f "${older[@]}" ;;
@@ -49,15 +50,15 @@ fetch:
 
 # Validate the kickstart against the supported release.
 check:
-    ksvalidator -v F{{release}} fedora-{{release}}.ks
+    ksvalidator -v F{{fedora}} fedora-{{fedora}}.ks
 
 # Build the install ISO from the official netinstall image in the repo root.
 iso: fetch
     mkdir -p {{out}}
-    sudo mkksiso --ks fedora-{{release}}.ks {{image}} {{out}}/fedora-{{release}}-nimbus.iso
+    sudo mkksiso --ks fedora-{{fedora}}.ks {{image}} {{out}}/fedora-{{fedora}}-nimbus.iso
 
-# Build and publish the current ISO as a GitHub release. Requires gh auth.
-release tag:
+# Build and publish the current ISO as the {{tag}} GitHub release. Requires gh auth.
+release:
     just iso
-    cd {{out}} && sha256sum fedora-{{release}}-nimbus.iso > SHA256SUMS
-    gh release create {{tag}} {{out}}/fedora-{{release}}-nimbus.iso {{out}}/SHA256SUMS --title "Fedora {{release}} install media" --notes "Modified Fedora {{release}} Everything/netinstall ISO with the workstation kickstart. Not Fedora-signed; verify SHA256SUMS before writing."
+    cd {{out}} && sha256sum fedora-{{fedora}}-nimbus.iso > SHA256SUMS
+    gh release create {{tag}} {{out}}/fedora-{{fedora}}-nimbus.iso {{out}}/SHA256SUMS --title "Fedora {{fedora}} install media {{tag}}" --notes "Modified Fedora {{fedora}} Everything/netinstall ISO with the workstation kickstart. Not Fedora-signed; verify SHA256SUMS before writing."
