@@ -2,9 +2,10 @@
 
 Personal Fedora workstation install media built from a kickstart.
 
-- One kickstart per Fedora release (`fedora-<release>.ks`). It prefills the
-  documented layout and package selection and never pins a disk, stores a
-  LUKS passphrase, or sets account credentials.
+- One kickstart per Fedora release (`fedora-<release>.ks`); its
+  `#version=F<release>` line names the release the justfile builds. It
+  prefills the documented layout and package selection and never pins a
+  disk, stores a LUKS passphrase, or sets account credentials.
 - Build only with native Fedora tooling (pykickstart, lorax `mkksiso`) from
   the official netinstall ISO. Never replace or re-sign boot binaries, and
   never use a placeholder checksum.
@@ -15,6 +16,7 @@ Personal Fedora workstation install media built from a kickstart.
 - The disk prompt is `scripts/disk-prompt.sh`, shipped on the ISO with
   `mkksiso --add` and covered by `tests/disk-prompt.test.sh`; keep
   `just check` green.
-- Release numbers come from git tags (`v<fedora>.<n>`); cut releases
-  with `just release`, never by editing a version.
+- Release numbers come from git tags (`v<fedora>.<n>`), restarting at `.0`
+  when a Fedora has no releases yet; cut releases with `just release`, never
+  by editing a version.
 - Never commit secrets, credentials, private paths or built media.

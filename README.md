@@ -81,7 +81,8 @@ just release        # the same build, published as a GitHub release
 ```
 
 `just fetch` downloads and verifies the official netinstall ISO for the
-release configured at the top of the justfile; `just iso` runs it first. An
+Fedora release named by the kickstart's `#version=` line and the respin
+pinned at the top of the justfile; `just iso` runs it first. An
 existing ISO is skipped once it verifies against Fedora's checksum; a partial
 download resumes, a complete file that no longer matches asks before it is
 deleted and re-downloaded, and other downloaded point releases are offered
@@ -113,14 +114,14 @@ It needs an authenticated `gh`, runs only from a clean `main` in sync with
 `origin/main`, and creates an annotated tag whose message records the source
 image, the commit and the SHA-256; the release notes carry the same.
 
-Nothing is edited for a normal release. Two justfile values pin the source
-media, like a lockfile:
+Nothing is edited for a normal release. The justfile's `point` pins the
+official netinstall respin (currently `44-1.7`), like a lockfile; the Fedora
+release comes from the single `fedora-<release>.ks`, whose `#version=` line
+must name it.
 
-- `point` follows the official netinstall respin (currently `44-1.7`).
-- `fedora` changes with a new Fedora, alongside its `fedora-<release>.ks`.
-
-The tag counter restarts per Fedora because tags are matched as `v<fedora>.*`.
-If the upload fails after the tag is pushed, rerun
+The tag counter restarts at 0 for a Fedora with no releases yet, so the
+first Fedora 45 release is `v45.0` even after `v44.11`. If the upload fails
+after the tag is pushed, rerun
 `gh release create <tag> --verify-tag out/fedora-44-nimbus.iso out/SHA256SUMS
 --notes "..."`, or release again and accept a skipped number.
 

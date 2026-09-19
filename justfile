@@ -1,4 +1,6 @@
-fedora := "44"
+# The kickstart's #version=F<release> line names the Fedora release; the
+# repository holds exactly one fedora-*.ks. `point` pins the official respin.
+fedora := `sh -c 'set -- fedora-*.ks; [ "$#" -eq 1 ] && [ -f "$1" ] || { echo "expected exactly one fedora-*.ks file" >&2; exit 1; }; v="$(sed -n "s/^#version=F//p" "$1")"; [ -n "$v" ] || { echo "no #version=F<release> line in $1" >&2; exit 1; }; printf "%s" "$v"'`
 point := "1.7"
 out := "out"
 image := "Fedora-Everything-netinst-x86_64-" + fedora + "-" + point + ".iso"
@@ -47,7 +49,8 @@ fetch:
 check:
     ksvalidator -v F{{fedora}} fedora-{{fedora}}.ks
     sh tests/disk-prompt.test.sh
-    if command -v shellcheck >/dev/null 2>&1; then shellcheck scripts/disk-prompt.sh; fi
+    sh tests/release-point.test.sh
+    if command -v shellcheck >/dev/null 2>&1; then shellcheck scripts/disk-prompt.sh scripts/release-point.sh; fi
 
 # Build the install ISO from the official netinstall image in the repo root.
 iso: fetch
@@ -73,16 +76,7 @@ release:
         exit 1
     fi
     git fetch --quiet --tags origin
-    last="$(git tag -l --sort=-v:refname 'v{{fedora}}.*' | head -1)"
-    if [ -n "$last" ]; then
-        n="${last##*.}"
-        case "$n" in
-            ''|*[!0-9]*) echo "Unexpected release tag: $last" >&2; exit 1 ;;
-        esac
-    else
-        n=0
-    fi
-    tag="v{{fedora}}.$((n + 1))"
+    tag="v{{fedora}}.$("scripts/release-point.sh" "{{fedora}}")"
     just iso
     notes="Source: {{image}}
     Commit: $(git rev-parse HEAD)
