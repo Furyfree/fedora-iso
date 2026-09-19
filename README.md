@@ -38,6 +38,9 @@ question entirely.
 If the prompt cannot run, or you answer anything but `YES`, the installer
 stops before touching a disk.
 
+The prompt is `scripts/disk-prompt.sh`, shipped on the ISO with
+`mkksiso --add`; `just check` runs its tests and shellcheck.
+
 Do not open Installation Destination: pressing Done there replaces the
 kickstart layout with automatic partitioning. Complete the startup LUKS
 passphrase dialog; cancelling it discards the layout too.
@@ -72,7 +75,7 @@ From the repository checkout, on any of the platforms above:
 
 ```sh
 just fetch          # download and verify the official netinstall ISO
-just check          # validate the kickstart
+just check          # validate the kickstart and disk prompt
 just iso            # build out/fedora-44-nimbus.iso
 just release        # the same build, published as a GitHub release
 ```

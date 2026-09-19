@@ -12,4 +12,7 @@ Personal Fedora workstation install media built from a kickstart.
   UEFI VM with Secure Boot and a second disk before real hardware.
 - The README is the only usage document; keep it short. Releases carry the
   built, unsigned ISO with its `SHA256SUMS`.
+- The disk prompt is `scripts/disk-prompt.sh`, shipped on the ISO with
+  `mkksiso --add` and covered by `tests/disk-prompt.test.sh`; keep
+  `just check` green.
 - Never commit secrets, credentials, private paths or built media.

@@ -49,15 +49,18 @@ fetch:
     curl -fL -C - -O "{{iso_base}}/{{image}}"
     sha256sum -c "$tmp/iso.sha256"
 
-# Validate the kickstart against the supported release.
+# Validate the kickstart and the disk prompt.
 check:
     ksvalidator -v F{{fedora}} fedora-{{fedora}}.ks
+    sh tests/disk-prompt.test.sh
+    if command -v shellcheck >/dev/null 2>&1; then shellcheck scripts/disk-prompt.sh; fi
 
 # Build the install ISO from the official netinstall image in the repo root.
 iso: fetch
-    mkdir -p {{out}}
+    mkdir -p {{out}}/iso/nimbus
+    cp scripts/disk-prompt.sh {{out}}/iso/nimbus/
     rm -f {{out}}/fedora-{{fedora}}-nimbus.iso
-    sudo mkksiso --ks fedora-{{fedora}}.ks {{image}} {{out}}/fedora-{{fedora}}-nimbus.iso
+    sudo mkksiso --ks fedora-{{fedora}}.ks --add {{out}}/iso/nimbus {{image}} {{out}}/fedora-{{fedora}}-nimbus.iso
 
 # Build and publish the current ISO as a GitHub release. Requires gh auth.
 release:
