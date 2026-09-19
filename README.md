@@ -28,13 +28,15 @@ the LUKS passphrase, root, the user account, network and hostname.
 
 ## Choosing the disk
 
-Before the graphical installer starts, the kickstart lists the local disks
-with their model, size and existing filesystems, asks which one to install
-to, and requires a `YES` confirmation because that disk is erased. With a
-single disk it selects it automatically and only asks for the confirmation.
+Before the graphical installer starts, the kickstart opens its own virtual
+console, lists the local disks with their model, size and existing
+filesystems, asks which one to install to, and requires a `YES` confirmation
+because that disk is erased. With a single disk it only asks for the
+confirmation. `inst.disk=/dev/disk/by-id/...` at the boot prompt skips the
+question entirely.
 
-Boot with `inst.disk=/dev/disk/by-id/...` to skip the menu; the confirmation
-still runs. That is also the fallback if the console prompt ever fails.
+If the prompt cannot run, or you answer anything but `YES`, the installer
+stops before touching a disk.
 
 Do not open Installation Destination: pressing Done there replaces the
 kickstart layout with automatic partitioning. Complete the startup LUKS

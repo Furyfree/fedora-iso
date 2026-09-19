@@ -13,6 +13,10 @@
 %pre
 set -eu
 
+# Keep a safe placeholder until the target disk is confirmed. Including an
+# unknown disk stops the installer instead of letting it guess a disk.
+printf 'ignoredisk --only-use=/dev/nimbus-no-disk-selected\n' > /tmp/disk.ks
+
 disk=""
 for arg in $(cat /proc/cmdline); do
     case "$arg" in
@@ -20,54 +24,56 @@ for arg in $(cat /proc/cmdline); do
     esac
 done
 
+if [ -n "$disk" ]; then
+    printf 'ignoredisk --only-use=%s\nclearpart --all --initlabel --drives=%s\n' "$disk" "$disk" > /tmp/disk.ks
+    exit 0
+fi
+
+cat > /tmp/nimbus-disk-prompt.sh <<'PROMPT'
+#!/bin/sh
+set -eu
+
 disks=$(lsblk -dn -o NAME,TYPE | awk '$2 == "disk" {print $1}')
 [ -n "$disks" ] || { echo "No installable disks found." >&2; exit 1; }
 count=$(printf '%s\n' "$disks" | wc -l)
 
-# Interact on the installer console; the graphical hub starts later.
-if [ ! -t 0 ] && [ -r /dev/tty3 ] && [ -w /dev/tty3 ]; then
-    exec </dev/tty3 >/dev/tty3 2>&1
-    chvt 3 2>/dev/null || true
-fi
-
-if [ -z "$disk" ]; then
-    if [ "$count" -eq 1 ]; then
-        disk="/dev/$disks"
-    else
-        printf '\nNimbus installer - choose the target disk\n\n'
-        i=0
-        for name in $disks; do
-            i=$((i + 1))
-            model=$(lsblk -dn -o MODEL "/dev/$name" 2>/dev/null | xargs)
-            size=$(lsblk -dn -o SIZE "/dev/$name" 2>/dev/null | xargs)
-            hint=$(lsblk -n -o FSTYPE "/dev/$name" 2>/dev/null | grep -v '^$' | sort -u | paste -sd, -)
-            printf '  %d) %-9s %-28s %-10s %s\n' "$i" "$name" "$model" "$size" "${hint:+($hint)}"
-        done
-        printf '\nChoose the target disk [1-%d]: ' "$i"
-        read -r choice
-        case "$choice" in
-            ''|*[!0-9]*) echo "Invalid choice." >&2; exit 1 ;;
-        esac
-        if [ "$choice" -lt 1 ] || [ "$choice" -gt "$i" ]; then
-            echo "Invalid choice." >&2
-            exit 1
-        fi
-        disk="/dev/$(printf '%s\n' "$disks" | sed -n "${choice}p")"
+if [ "$count" -eq 1 ]; then
+    chosen="$disks"
+else
+    printf '\nNimbus installer - choose the target disk\n\n'
+    i=0
+    for name in $disks; do
+        i=$((i + 1))
+        model=$(lsblk -dn -o MODEL "/dev/$name" 2>/dev/null | xargs)
+        size=$(lsblk -dn -o SIZE "/dev/$name" 2>/dev/null | xargs)
+        hint=$(lsblk -n -o FSTYPE "/dev/$name" 2>/dev/null | grep -v '^$' | sort -u | paste -sd, -)
+        printf '  %d) %-9s %-28s %-10s %s\n' "$i" "$name" "$model" "$size" "${hint:+($hint)}"
+    done
+    printf '\nChoose the target disk [1-%d]: ' "$i"
+    read -r choice
+    case "$choice" in
+        ''|*[!0-9]*) echo "Invalid choice." >&2; exit 1 ;;
+    esac
+    if [ "$choice" -lt 1 ] || [ "$choice" -gt "$i" ]; then
+        echo "Invalid choice." >&2
+        exit 1
     fi
+    chosen=$(printf '%s\n' "$disks" | sed -n "${choice}p")
 fi
 
-name=$(basename "$disk")
-model=$(lsblk -dn -o MODEL "$disk" 2>/dev/null | xargs)
-size=$(lsblk -dn -o SIZE "$disk" 2>/dev/null | xargs)
-printf '\nThis will erase %s (%s, %s).\nType YES to continue: ' "$name" "$model" "$size"
+model=$(lsblk -dn -o MODEL "/dev/$chosen" 2>/dev/null | xargs)
+size=$(lsblk -dn -o SIZE "/dev/$chosen" 2>/dev/null | xargs)
+printf '\nThis will erase %s (%s, %s).\nType YES to continue: ' "$chosen" "$model" "$size"
 read -r confirm
 [ "$confirm" = YES ] || { echo "Aborted." >&2; exit 1; }
 
-printf 'ignoredisk --only-use=%s\nclearpart --all --initlabel --drives=%s\n' "$disk" "$disk" > /tmp/disk.ks
+printf 'ignoredisk --only-use=/dev/%s\nclearpart --all --initlabel --drives=/dev/%s\n' "$chosen" "$chosen" > /tmp/disk.ks
+PROMPT
+chmod +x /tmp/nimbus-disk-prompt.sh
 
-if [ -r /dev/tty3 ] && [ -w /dev/tty3 ]; then
-    chvt 1 2>/dev/null || true
-fi
+# Ask on its own virtual console; switch back afterwards.
+openvt -s -w -- /bin/sh /tmp/nimbus-disk-prompt.sh
+chvt 1 2>/dev/null || true
 %end
 
 lang en_DK.UTF-8
