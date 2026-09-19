@@ -56,9 +56,10 @@ sudo pacman -S just
 From the repository checkout, on any of the platforms above:
 
 ```sh
-just fetch
-just check
-just iso
+just fetch          # download and verify the official netinstall ISO
+just check          # validate the kickstart
+just iso            # build out/fedora-44-nimbus.iso
+just release v44.1  # the same build, published as a GitHub release
 ```
 
 `just fetch` downloads and verifies the official netinstall ISO for the
