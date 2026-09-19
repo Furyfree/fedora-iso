@@ -29,11 +29,30 @@ prefilled layout applies to the disk you select.
 
 ## Build
 
-Place the official `Fedora-Everything-netinst-x86_64-44-*.iso` in the repo
-root, then:
+`pykickstart` (ksvalidator) and `lorax` (mkksiso) are selected by the Nimbus
+development profile, or install them directly.
+
+### Fedora
 
 ```sh
 sudo dnf install -y pykickstart lorax
+```
+
+### Windows
+
+Build inside the Fedora WSL that
+[win-setup](https://github.com/Furyfree/win-setup) provisions, with the same
+packages as Fedora.
+
+### Arch Linux
+
+The AUR carries `lorax` and `python-pykickstart`. They are unofficial and
+untested here; install them with your AUR helper and continue below.
+
+With the official `Fedora-Everything-netinst-x86_64-44-*.iso` in the repo
+root:
+
+```sh
 just check
 just iso
 ```
