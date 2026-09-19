@@ -68,40 +68,10 @@ download resumes, a complete file that no longer matches asks before it is
 deleted and re-downloaded, and other downloaded point releases are offered
 for removal.
 
-The result is `out/fedora-44-nimbus.iso`. Write it to a USB stick with Fedora
-Media Writer or (replace `/dev/sdX` with the USB device):
-
-```sh
-sudo dd if=out/fedora-44-nimbus.iso of=/dev/sdX bs=8M status=progress conv=fsync
-```
-
-### Alternative: OEMDRV stick
-
-Write the verified netinstall ISO from `just fetch` (or any official
-netinstall media) to a USB as usual, then put the kickstart on a small FAT
-volume labeled `OEMDRV`. Anaconda loads `/ks.cfg` automatically when the
-stock media boots, so no rebuilt ISO is needed:
-
-```sh
-sudo parted /dev/sdX --script mklabel msdos mkpart primary fat32 1MiB 100%
-sudo mkfs.vfat -n OEMDRV /dev/sdX1
-sudo mount /dev/sdX1 /mnt
-sudo cp fedora-44.ks /mnt/ks.cfg
-sync && sudo umount /mnt
-```
-
-## Install
-
-1. Boot the media in UEFI mode with Secure Boot on.
-2. Installation Destination: select only the target disk.
-3. The layout is waiting in Blivet; review or edit it, then press Done.
-4. Enter the LUKS passphrase when prompted.
-5. Check Software Selection (editable), then Begin Installation.
-6. Finish the root and user prompts, then reboot.
-
-After first boot, install Nimbus per the
-[wiki](https://github.com/Furyfree/nimbus/wiki), and continue with the
-[Nimbus postinstall steps](https://github.com/Furyfree/nimbus/wiki/Postinstall).
+The result is `out/fedora-44-nimbus.iso`: the official netinstall media with
+the kickstart injected, for the standard UEFI Secure Boot install flow. Disk
+selection, the LUKS passphrase, root and the user stay interactive, and the
+prefilled spokes remain editable.
 
 ## Drill before real hardware
 
