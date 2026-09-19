@@ -38,7 +38,9 @@ for base in /run/install/repo /mnt/install/repo; do
 done
 [ -n "$prompt" ] || { echo "nimbus: disk-prompt.sh not found on the media" >&2; exit 1; }
 
-openvt -s -w -- /bin/sh "$prompt"
+[ -c /dev/tty3 ] || { echo "nimbus: /dev/tty3 unavailable" >&2; exit 1; }
+chvt 3 2>/dev/null || true
+/bin/sh "$prompt" </dev/tty3 >/dev/tty3 2>&1
 chvt 1 2>/dev/null || true
 %end
 
