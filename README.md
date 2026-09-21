@@ -1,138 +1,76 @@
 # fedora-iso
 
-Fedora workstation install media built from a kickstart. The kickstart
-prefills the installer choices that are the same on every machine. The target
-disk is chosen on the installer console before the GUI starts, then pinned
-for the rest of the install; the LUKS passphrase, root, user and network stay
-interactive.
-
-This is not a custom distribution image. `mkksiso` injects the kickstart into
-the official Fedora Everything/netinstall ISO and leaves the signed boot
-binaries untouched.
-
-## What is prefilled
-
-| Installer step | Value |
-| --- | --- |
-| Language | English (Denmark) |
-| Keyboard | Danish, then English (US) |
-| Time | Europe/Copenhagen, network time |
-| Storage | EFI 1 GiB, ext4 `/boot` 2 GiB, LUKS2 btrfs, ten subvolumes |
-| Software | Custom Operating System, Standard, NetworkManager submodules |
-
-The btrfs subvolumes are root, home, snapshots, log, cache, swapfile,
-flatpak, windows, docker and containerd.
-
-Not prefilled on purpose: the installation source (choose Closest mirror),
-the LUKS passphrase, root, the user account, network and hostname.
-
-## Choosing the disk
-
-Before the graphical installer starts, the kickstart asks on the installer
-console and lists the local disks with their model, size and existing
-filesystems, asks which one to install to, and requires a `YES` confirmation
-because that disk is erased. With a single disk it only asks for the
-confirmation. `inst.disk=/dev/disk/by-id/...` at the boot prompt skips the
-question entirely.
-
-If the prompt cannot run, or you answer anything but `YES`, the installer
-stops before touching a disk.
-
-The prompt is `scripts/disk-prompt.sh`, shipped on the ISO with
-`mkksiso --add`; `just check` runs its tests and shellcheck.
-
-Do not open Installation Destination: pressing Done there replaces the
-kickstart layout with automatic partitioning. Complete the startup LUKS
-passphrase dialog; cancelling it discards the layout too.
+Personal Fedora install media built from the official Everything/netinstall
+ISO. The kickstart supplies the workstation layout and package selection;
+`mkksiso` adds it without replacing Fedora's signed boot binaries.
 
 ## Build
 
-### Fedora
+Use Fedora with `just`, `pykickstart`, `lorax`, `curl` and `pkexec` installed.
+ShellCheck is optional. The build requests root access through a PolicyKit
+approval prompt. On Windows, use the Fedora WSL provisioned by
+[win-setup](https://github.com/Furyfree/win-setup); it needs the same tools
+and a working PolicyKit authentication agent.
 
 ```sh
-sudo dnf install -y just pykickstart lorax
-```
-
-### Windows
-
-Build inside the Fedora WSL that
-[win-setup](https://github.com/Furyfree/win-setup) provisions, with the same
-packages as Fedora (`just`, `pykickstart`, `lorax`).
-
-### Arch Linux
-
-`just` is in the official repositories; the AUR carries `lorax` and
-`python-pykickstart`. The AUR packages are unofficial and untested here.
-
-```sh
-sudo pacman -S just
-# install lorax and python-pykickstart from the AUR
-```
-
-### Build the media
-
-From the repository checkout, on any of the platforms above:
-
-```sh
+just check          # validate the kickstart and run shell tests
 just fetch          # download and verify the official netinstall ISO
-just check          # validate the kickstart and disk prompt
-just iso            # build out/fedora-44-nimbus.iso
-just release        # the same build, published as a GitHub release
+just iso            # check, fetch, then build out/fedora-44-nimbus.iso
 ```
 
-`just fetch` downloads and verifies the official netinstall ISO for the
-Fedora release named by the kickstart's `#version=` line and the respin
-pinned at the top of the justfile; `just iso` runs it first. An
-existing ISO is skipped once it verifies against Fedora's checksum; a partial
-download resumes, a complete file that no longer matches asks before it is
-deleted and re-downloaded, and other downloaded point releases are offered
-for removal.
+The Fedora release comes from the single `fedora-<release>.ks`; `point` in
+`justfile` pins the official respin. Fetch reuses a verified ISO, resumes
+partial downloads and asks before deleting mismatched or older media.
+The build also writes `out/SHA256SUMS`.
 
-The result is `out/fedora-44-nimbus.iso`: the official netinstall media with
-the kickstart injected, for the standard UEFI Secure Boot install flow. Disk
-selection, the LUKS passphrase, root and the user stay interactive, and the
-prefilled spokes remain editable.
+## Install
 
-## Drill before real hardware
+Boot the ISO. The console lists the disks and asks which to erase, then
+requires `YES`. With one disk, it only asks for confirmation. Aborting or
+losing console input stops installation before erasing a disk.
 
-Test any change in a disposable UEFI VM with Secure Boot and two disks, the
-second holding an NTFS partition:
+**The selected disk is erased.** The boot option
+`inst.disk=/dev/disk/by-id/...` selects it directly and bypasses confirmation.
 
-- the layout follows the disk you select, and the second disk is unchanged;
-- the LUKS passphrase prompt appears;
-- software selection is prefilled and editable;
-- the installed system boots with the subvolumes and encryption intact.
+Complete the startup LUKS passphrase dialog. Do not cancel it or open
+Installation Destination and press Done: either discards the kickstart
+layout. Choose Closest mirror for the installation source, and fill in the
+root, user, network and hostname settings. See
+[fedora-44.ks](fedora-44.ks) for the preset layout, locale and packages.
 
-The kickstart never uses `clearpart` or `--ondisk`; if you want to reuse a
-disk, reclaim its space in the storage spoke rather than automating a wipe.
+Before using changed media on hardware, test in a disposable UEFI VM with
+Secure Boot and two disks, including an NTFS partition on the second:
 
-## Releases
+- Select the target, confirm the wipe and check that the other disk survives.
+- Check the LUKS prompt and editable software selection.
+- Boot the installed system and check its encryption and subvolumes.
 
-`just release` builds the ISO and publishes it as the next GitHub release,
-numbered from the existing tags: `v<fedora>.<n>`, so `v44.4` after `v44.3`.
-It needs an authenticated `gh`, runs only from a clean `main` in sync with
-`origin/main`, and creates an annotated tag whose message records the source
-image, the commit and the SHA-256; the release notes carry the same.
+## Release
 
-Nothing is edited for a normal release. The justfile's `point` pins the
-official netinstall respin (currently `44-1.7`), like a lockfile; the Fedora
-release comes from the single `fedora-<release>.ks`, whose `#version=` line
-must name it.
+From a clean `main` matching `origin/main`, with `gh` authenticated:
 
-The tag counter restarts at 0 for a Fedora with no releases yet, so the
-first Fedora 45 release is `v45.0` even after `v44.11`. If the upload fails
-after the tag is pushed, rerun
-`gh release create <tag> --verify-tag out/fedora-44-nimbus.iso out/SHA256SUMS
---notes "..."`, or release again and accept a skipped number.
+```sh
+just release
+```
+
+This checks and builds the ISO, pushes an annotated `v<fedora>.<n>` tag and
+publishes the ISO with `SHA256SUMS`. Numbering starts at `.0` for each Fedora
+release. The tag and release notes record the source image, commit and
+checksum. The modified ISO is not Fedora-signed; verify its checksum.
+
+If upload fails after the tag is pushed, retry with that tag and its notes:
+
+```sh
+git tag -l --format='%(contents)' <tag> > /tmp/fedora-iso-release-notes.txt
+gh release create <tag> --verify-tag out/fedora-44-nimbus.iso out/SHA256SUMS \
+    --notes-file /tmp/fedora-iso-release-notes.txt
+```
 
 ## After install
 
-- `/var/swap` is an empty subvolume. Create a swapfile only if needed
-  (`chattr +C`, `btrfs filesystem mkswapfile`); Fedora already has zram.
-- `docker`, `containerd` and `/var/lib/nimbus` may need `restorecon`, and VM
-  images want `chattr +C`.
-- Guest Agents is not selected; tick it for a VM install.
+- `/var/swap` is empty. Create a swapfile only if needed; Fedora has zram.
+- Docker, containerd and `/var/lib/nimbus` may need `restorecon`; use
+  `chattr +C` for directories that will hold VM images.
+- Select Guest Agents when installing in a VM.
 
-## License
-
-MIT, see [LICENSE](LICENSE).
+[MIT license](LICENSE).

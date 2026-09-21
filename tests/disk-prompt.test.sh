@@ -40,10 +40,16 @@ if printf '1\nno\n' | run >/dev/null 2>&1; then
 fi
 [ ! -e "$tmp/disk.ks" ]
 
-if printf '9\n' | run >/dev/null 2>&1; then
-    echo "invalid choice was accepted" >&2
-    exit 1
-fi
+# Invalid choices and EOF must leave the fail-closed fragment untouched.
+printf 'ignoredisk --only-use=/dev/nimbus-no-disk-selected\n' > "$tmp/sentinel"
+for input in '9\n' '0\n' 'abc\n' '\n' '' '1\n'; do
+    cp "$tmp/sentinel" "$tmp/disk.ks"
+    if printf '%b' "$input" | run >/dev/null 2>&1; then
+        echo "invalid or interrupted input was accepted: $input" >&2
+        exit 1
+    fi
+    cmp "$tmp/sentinel" "$tmp/disk.ks"
+done
 
 cat > "$tmp/bin/lsblk" <<'EOF'
 #!/bin/sh
@@ -60,5 +66,13 @@ chmod +x "$tmp/bin/lsblk"
 rm -f "$tmp/disk.ks"
 printf 'YES\n' | run >/dev/null
 grep -qx 'clearpart --all --initlabel --drives=/dev/nvme0n1' "$tmp/disk.ks"
+
+printf '#!/bin/sh\nexit 0\n' > "$tmp/bin/lsblk"
+cp "$tmp/sentinel" "$tmp/disk.ks"
+if run </dev/null >/dev/null 2>&1; then
+    echo "no disks was accepted" >&2
+    exit 1
+fi
+cmp "$tmp/sentinel" "$tmp/disk.ks"
 
 echo 'disk-prompt tests passed'

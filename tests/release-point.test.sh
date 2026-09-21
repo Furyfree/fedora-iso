@@ -11,6 +11,8 @@ cd "$tmp"
 export GIT_AUTHOR_NAME=test GIT_AUTHOR_EMAIL=test@example.com
 export GIT_COMMITTER_NAME=test GIT_COMMITTER_EMAIL=test@example.com
 git init -q
+git config --local commit.gpgsign false
+git config --local tag.gpgsign false
 git commit -q --allow-empty -m init
 
 expect() {

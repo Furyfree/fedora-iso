@@ -1,6 +1,6 @@
 #!/bin/sh
 # Ask for the target disk on the installer console and write the kickstart
-# storage fragment. Run from the kickstart's %pre through openvt.
+# storage fragment. Run from the kickstart's %pre through /dev/tty.
 set -eu
 
 target="${DISK_KS:-/tmp/disk.ks}"

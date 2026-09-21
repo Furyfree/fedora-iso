@@ -34,8 +34,13 @@ fetch:
             esac
         fi
     fi
-    older=(Fedora-Everything-netinst-x86_64-{{fedora}}-*.iso)
-    if [ -e "${older[0]}" ]; then
+    older=()
+    for candidate in Fedora-Everything-netinst-x86_64-{{fedora}}-*.iso; do
+        if [ -f "$candidate" ] && [ "$candidate" != "{{image}}" ]; then
+            older+=("$candidate")
+        fi
+    done
+    if [ "${#older[@]}" -gt 0 ]; then
         echo "Other Fedora {{fedora}} media present: ${older[*]}"
         read -r -p "Remove those? [y/N] " answer
         case "$answer" in
@@ -45,19 +50,20 @@ fetch:
     curl -fL -C - -O "{{iso_base}}/{{image}}"
     sha256sum -c "$tmp/iso.sha256"
 
-# Validate the kickstart and the disk prompt.
+# Validate the kickstart and run the shell regressions.
 check:
     ksvalidator -v F{{fedora}} fedora-{{fedora}}.ks
     sh tests/disk-prompt.test.sh
     sh tests/release-point.test.sh
-    if command -v shellcheck >/dev/null 2>&1; then shellcheck scripts/disk-prompt.sh scripts/release-point.sh; fi
+    sh tests/build.test.sh
+    if command -v shellcheck >/dev/null 2>&1; then shellcheck scripts/*.sh tests/*.sh; fi
 
 # Build the install ISO from the official netinstall image in the repo root.
-iso: fetch
+iso: check fetch
     mkdir -p {{out}}/iso/nimbus
     cp scripts/disk-prompt.sh {{out}}/iso/nimbus/
     rm -f {{out}}/fedora-{{fedora}}-nimbus.iso
-    sudo mkksiso --ks fedora-{{fedora}}.ks --add {{out}}/iso/nimbus {{image}} {{out}}/fedora-{{fedora}}-nimbus.iso
+    pkexec --keep-cwd /usr/bin/mkksiso --ks fedora-{{fedora}}.ks --add {{out}}/iso/nimbus {{image}} {{out}}/fedora-{{fedora}}-nimbus.iso
     (cd {{out}} && sha256sum fedora-{{fedora}}-nimbus.iso > SHA256SUMS)
 
 # Build and publish the current ISO as the next v<fedora>.<n> release.
@@ -65,6 +71,10 @@ release:
     #!/usr/bin/env bash
     set -euo pipefail
     cd "{{justfile_directory()}}"
+    if [ "$(git branch --show-current)" != main ]; then
+        echo "Releases must run from main." >&2
+        exit 1
+    fi
     if [ -n "$(git status --porcelain)" ]; then
         echo "Worktree is not clean; commit or discard changes before releasing." >&2
         git status --short >&2
